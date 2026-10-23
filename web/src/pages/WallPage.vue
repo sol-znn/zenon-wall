@@ -12,7 +12,7 @@ import WallPager from '@/components/WallPager.vue'
 import {useWallet} from '@/composables/useWallet'
 import {isConfigured, pageSize} from '@/lib/env'
 import {previewFuelled, previewLongest} from '@/lib/ignite'
-import {height, relative, units} from '@/lib/format'
+import {amountText, height, relative} from '@/lib/format'
 import {
   fetchCount,
   fetchIndexerState,
@@ -240,7 +240,7 @@ const last = computed(() => Math.min(total.value, page.value * pageSize))
               Confirming
             </Badge>
             <span v-if="p.fuel" class="font-mono text-xs tabular-nums text-muted-foreground"
-              >{{ units(p.fuel.amount, 8) }} ZNN
+              >{{ amountText(p.fuel.amount, 8) }} ZNN
               {{ p.fuel.kind === 'burn' ? 'burned' : 'to Accelerator-Z' }}</span
             >
           </div>

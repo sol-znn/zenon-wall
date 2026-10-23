@@ -22,7 +22,7 @@ import {
 } from 'nom-ui'
 import {useWallet} from '@/composables/useWallet'
 import {chainId, explorer, networkName} from '@/lib/env'
-import {units} from '@/lib/format'
+import {amountText} from '@/lib/format'
 import {MIN_FUEL_ZNN, type Fuel} from '@/lib/ignite'
 import {
   MAX_MESSAGE_BYTES,
@@ -179,7 +179,7 @@ function onKeydown(e: KeyboardEvent) {
         <CircleCheckIcon class="!text-success" />
         <AlertTitle class="flex flex-wrap items-center gap-x-2 gap-y-1">
           <span
-            >{{ sentVerb }} <span class="font-mono tabular-nums">{{ units(sent.amount, 8) }}</span> ZNN</span
+            >{{ sentVerb }} <span class="font-mono tabular-nums">{{ amountText(sent.amount, 8) }}</span> ZNN</span
           >
           <Address
             v-if="sent.fuel"
@@ -206,7 +206,7 @@ function onKeydown(e: KeyboardEvent) {
         <AlertTitle>{{ unclaimed.kind === 'burn' ? 'Burned' : 'Donated' }}, not posted</AlertTitle>
         <AlertDescription class="flex flex-wrap items-center gap-x-1.5 gap-y-2">
           <span>
-            {{ units(unclaimed.amount, 8) }} ZNN
+            {{ amountText(unclaimed.amount, 8) }} ZNN
             {{ unclaimed.kind === 'burn' ? 'was burned' : 'went to Accelerator-Z' }}, but the post
             naming it was not sent.
           </span>
