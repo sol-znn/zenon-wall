@@ -47,7 +47,11 @@ const {address, sending, holdSeconds, wrongChain, walletChainId, post, sendFuel}
 
 const draft = ref('')
 const error = ref('')
-const sent = ref<{hash: string} | null>(null)
+// What went out: the post, and for Boost or Torch the block it names.
+const sent = ref<{hash: string; amount: string; fuel?: Fuel} | null>(null)
+const sentVerb = computed(() =>
+  sent.value?.fuel?.kind === 'ignite' ? 'Boosted' : sent.value?.fuel ? 'Torched' : 'Tagged',
+)
 
 const text = computed(() => normalizeMessage(draft.value))
 const bytes = computed(() => (text.value ? messageBytes(text.value) : 0))
@@ -75,7 +79,7 @@ async function publish(message: string, amount: string, fuel?: Fuel) {
   step.value = 'post'
   const hash = await post(message, amount, fuel?.block)
   unclaimed.value = null
-  sent.value = {hash}
+  sent.value = {hash, amount: fuel?.amount ?? amount, fuel}
   draft.value = ''
   emit('posted', {hash, message, address: address.value, fuel})
 }
@@ -173,17 +177,28 @@ function onKeydown(e: KeyboardEvent) {
 
       <Alert v-if="sent" class="border-success/40">
         <CircleCheckIcon class="!text-success" />
-        <AlertTitle>Sent</AlertTitle>
-        <AlertDescription class="flex flex-wrap items-center gap-x-1.5">
-          Transaction
+        <AlertTitle class="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span
+            >{{ sentVerb }} <span class="font-mono tabular-nums">{{ units(sent.amount, 8) }}</span> ZNN</span
+          >
           <Address
+            v-if="sent.fuel"
+            :address="sent.fuel.block"
+            :href="explorer?.tx(sent.fuel.block)"
+            :start="8"
+            :end="6"
+            class="text-xs font-normal"
+          />
+          <Address
+            v-else
             :address="sent.hash"
             :href="explorer?.tx(sent.hash)"
             :start="8"
             :end="6"
-            class="text-xs"
-          />. It appears on the wall once a momentum confirms it.
-        </AlertDescription>
+            class="text-xs font-normal"
+          />
+        </AlertTitle>
+        <AlertDescription>It appears on the wall once a momentum confirms it.</AlertDescription>
       </Alert>
 
       <Alert v-if="unclaimed && !sending" class="border-warning/40">
