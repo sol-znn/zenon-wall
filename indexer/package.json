@@ -1,0 +1,24 @@
+{
+  "name": "zenon-wall-indexer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Scans NoM momentums for send blocks whose data starts with \"ZW\" and appends them to Supabase.",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/index.ts",
+    "once": "node --env-file-if-exists=.env src/index.ts --once",
+    "scan": "node --env-file-if-exists=.env src/scan.ts",
+    "test": "node --test \"test/**/*.test.ts\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.57.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0"
+  }
+}

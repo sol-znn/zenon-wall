@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#141414" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="description" content="Messages written permanently into the Network of Momentum. Send any token with data starting with ZW and it appears here.">
+<!--
+  GitHub Pages cannot set headers, so the policy lives here. connect-src allows
+  the configured Supabase origin and nothing else — vite.config.ts fills it in
+  from VITE_SUPABASE_URL at build time. The page never talks to a node.
+  'unsafe-inline' is for style attributes the design system's popovers write.
+-->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self';
+  style-src 'self' 'unsafe-inline';
+  font-src 'self';
+  img-src 'self' data:;
+  connect-src 'self' __SUPABASE_ORIGIN__;
+  object-src 'none';
+  base-uri 'none';
+  form-action 'none'">
+<link rel="icon" type="image/svg+xml" href="./favicon.svg">
+<title>Zenon Wall</title>
+</head>
+<body>
+<div id="app"></div>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

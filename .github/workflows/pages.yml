@@ -1,0 +1,75 @@
+name: Deploy web to GitHub Pages
+
+# Builds web/ into static files and publishes them. The Supabase URL and anon
+# key are baked into the bundle; both are public by design (RLS makes the key
+# read-only), so they live in repository *variables*, not secrets.
+#
+# One-time setup:
+#   Settings → Pages → Source → GitHub Actions
+#   Settings → Secrets and variables → Actions → Variables:
+#     SUPABASE_URL, SUPABASE_ANON_KEY   (optional: PAGE_SIZE)
+
+on:
+  push:
+    branches: [master]
+    paths: ['web/**', '.github/workflows/pages.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      # nom-ui is a GitHub dependency; npm 12 refuses git specs without this.
+      - name: Install
+        env:
+          npm_config_allow_git: all
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Test
+        run: npm test
+      - name: Build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+          VITE_PAGE_SIZE: ${{ vars.PAGE_SIZE }}
+          # Optional: the chain the wall reads (1 mainnet) and which explorer to link.
+          VITE_ZNN_CHAIN_ID: ${{ vars.ZNN_CHAIN_ID }}
+          VITE_EXPLORER: ${{ vars.EXPLORER }}
+        run: |
+          if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
+            echo "::error::Set the SUPABASE_URL and SUPABASE_ANON_KEY repository variables"
+            exit 1
+          fi
+          npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

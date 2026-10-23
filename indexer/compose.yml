@@ -1,0 +1,22 @@
+# The indexer as a long-running service, for a Linux host:
+#
+#   cp .env.example .env          # SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+#   docker compose up -d --build
+#   docker compose logs -f        # stop | restart | down
+#
+# It comes back after a crash or a reboot. Stopping lets it finish the window
+# it is writing; the cursor in Supabase means nothing is lost either way.
+
+name: zenon-wall-indexer
+
+services:
+  indexer:
+    build: .
+    env_file: .env
+    restart: unless-stopped
+    stop_grace_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
