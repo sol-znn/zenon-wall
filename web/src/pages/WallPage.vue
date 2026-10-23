@@ -12,7 +12,8 @@ import WallPager from '@/components/WallPager.vue'
 import {useWallet} from '@/composables/useWallet'
 import {isConfigured, pageSize} from '@/lib/env'
 import {previewFuelled, previewLongest} from '@/lib/ignite'
-import {amountText, height, relative} from '@/lib/format'
+import {amountText, height} from '@/lib/format'
+import {wallStats} from '@/lib/stats'
 import {
   fetchCount,
   fetchIndexerState,
@@ -39,7 +40,6 @@ const total = ref(0)
 const indexer = ref<IndexerState | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
-const now = ref(Date.now())
 
 function goTo(p: number) {
   return router.push({query: p === 1 ? {} : {page: String(p)}})
@@ -60,7 +60,6 @@ async function load(quiet = false) {
     total.value = p.total
     indexer.value = s
     error.value = null
-    now.value = Date.now()
     const lastPage = Math.max(1, Math.ceil(p.total / pageSize))
     if (page.value > lastPage) void goTo(lastPage)
   } catch (err) {
@@ -86,7 +85,6 @@ async function poll() {
       fetchCount().catch(() => null),
       fetchIndexerState().catch(() => null),
     ])
-    now.value = Date.now()
     if (state) indexer.value = state
     if (count !== null && count !== total.value) {
       if (page.value === 1) await load(true)
@@ -107,9 +105,15 @@ watch(messages, (list) => {
   pending.value = pending.value.filter((p) => !seen.has(p.hash))
 })
 
-// A number flashes when it changes after the first load, so a live update is seen.
-const settled = ref(false)
-watch(loading, (l) => !l && !error.value && setTimeout(() => (settled.value = true), 0))
+// The count and height live in the header (AppHeader.vue); this page keeps them fresh.
+watch(
+  [total, indexer, loading],
+  ([t, s, l]) => {
+    if (!l) wallStats.total = t
+    wallStats.indexer = s
+  },
+  {immediate: true},
+)
 
 function onPosted(post: Posted) {
   pending.value = [post, ...pending.value]
@@ -156,30 +160,6 @@ const last = computed(() => Math.min(total.value, page.value * pageSize))
       Where the aliens leave their mark.
     </p>
 
-    <dl v-if="isConfigured" class="rise mt-7 flex flex-wrap gap-x-8 gap-y-3" style="--i: 3">
-        <div>
-          <dt class="text-ledger text-muted-foreground">Messages</dt>
-          <dd class="font-mono text-lg tabular-nums">
-            <Skeleton v-if="loading && !total" class="mt-1 h-5 w-10" />
-            <span v-else :key="total" :class="{flash: settled}">{{ height(total) }}</span>
-          </dd>
-        </div>
-        <div>
-          <dt class="text-ledger text-muted-foreground">Indexed through</dt>
-          <dd class="font-mono text-lg tabular-nums">
-            <Skeleton v-if="!indexer && loading" class="mt-1 h-5 w-24" />
-            <span
-              v-else-if="indexer"
-              :key="indexer.height"
-              :class="{flash: settled}"
-              :title="`Updated ${relative(indexer.updated_at, now)}`"
-            >
-              #{{ height(indexer.height) }}
-            </span>
-            <span v-else class="text-muted-foreground">None yet</span>
-          </dd>
-        </div>
-    </dl>
 
     <SignTheWall
       v-if="connected"
