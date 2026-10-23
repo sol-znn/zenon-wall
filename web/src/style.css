@@ -222,13 +222,13 @@
 @keyframes numeral-shine {
   0%,
   12% {
-    opacity: 0.16;
+    opacity: 0.6;
     background-position:
       100% 0,
       0 0;
   }
   19.5% {
-    opacity: 0.42;
+    opacity: 1;
   }
   27% {
     background-position:
@@ -237,7 +237,7 @@
   }
   32%,
   100% {
-    opacity: 0.16;
+    opacity: 0.6;
     background-position:
       0% 0,
       0 0;
