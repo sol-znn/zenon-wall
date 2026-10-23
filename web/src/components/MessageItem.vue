@@ -168,8 +168,8 @@ const edgeStops = computed(() =>
           fuel?.kind === 'ignite'
             ? 'ignite-numeral'
             : fuel
-              ? [ink, 'opacity-[0.4] sm:opacity-[0.24]']
-              : 'text-foreground/[0.22] sm:text-foreground/[0.09]'
+              ? [ink, 'opacity-60']
+              : 'text-foreground/35'
         "
         aria-hidden="true"
         >{{ message.momentum_height }}</span
