@@ -42,7 +42,7 @@ export interface Posted {
 }
 const emit = defineEmits<{posted: [post: Posted]}>()
 
-const {address, sending, holdSeconds, wrongChain, walletChainId, post, sendFuel, disconnect} =
+const {address, sending, holdSeconds, wrongChain, walletChainId, post, sendFuel} =
   useWallet()
 
 const draft = ref('')
@@ -133,27 +133,14 @@ function onKeydown(e: KeyboardEvent) {
 <template>
   <Card class="gap-0 border-slab! bg-slab! p-4 sm:p-5">
     <form class="flex flex-col gap-3" @submit.prevent="submit">
-      <div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <label for="wall-message" class="font-medium">Tag the Wall</label>
-        <span class="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Address :address="address" :start="8" :end="6" :copy="false" class="text-xs" />
-          <Button
-            type="button"
-            variant="link"
-            size="xs"
-            class="h-auto px-0 text-xs text-muted-foreground sm:hidden"
-            @click="disconnect"
-            >Disconnect</Button
-          >
-        </span>
-      </div>
-
+      <!-- The header's wallet chip shows the account and disconnects. -->
+      <label for="wall-message" class="sr-only">Tag the Wall</label>
       <Textarea
         id="wall-message"
         v-model="draft"
         rows="3"
         maxlength="2048"
-        placeholder="Hello ZNNAliens!"
+        placeholder="Tag the Wall"
         :disabled="sending"
         class="resize-y text-base leading-relaxed"
         :aria-invalid="tooLong || undefined"
