@@ -37,28 +37,26 @@ const iconHover =
           >
         </RouterLink>
         <span
-          class="flex min-w-0 items-center gap-2 overflow-hidden font-mono text-xs whitespace-nowrap text-muted-foreground tabular-nums max-[359px]:hidden"
+          v-if="wallStats.total !== null"
+          :key="`t${wallStats.total}`"
+          class="hidden items-center gap-1 font-mono text-xs whitespace-nowrap text-muted-foreground tabular-nums sm:inline-flex"
+          :class="{flash: settled}"
+          title="Messages"
         >
-          <span
-            v-if="wallStats.total !== null"
-            :key="`t${wallStats.total}`"
-            class="hidden items-center gap-1 sm:inline-flex"
-            :class="{flash: settled}"
-            title="Messages"
-          >
-            <MessageSquareIcon class="size-3" aria-hidden="true" />{{ height(wallStats.total) }}
-            <span class="sr-only">messages</span>
-          </span>
-          <span
-            v-if="wallStats.indexer"
-            :key="wallStats.indexer.height"
-            :class="{flash: settled}"
-            title="Indexed through momentum"
-            ><span class="sr-only">indexed through </span>#{{ height(wallStats.indexer.height) }}</span
-          >
+          <MessageSquareIcon class="size-3" aria-hidden="true" />{{ height(wallStats.total) }}
+          <span class="sr-only">messages</span>
         </span>
       </div>
 
+      <!-- Beside the wallet chip, so the chain's height reads with the account. -->
+      <span
+        v-if="wallStats.indexer"
+        :key="wallStats.indexer.height"
+        class="font-mono text-xs whitespace-nowrap text-muted-foreground tabular-nums max-[359px]:hidden"
+        :class="{flash: settled}"
+        title="Indexed through momentum"
+        ><span class="sr-only">indexed through momentum </span>{{ height(wallStats.indexer.height) }}</span
+      >
       <WalletChip />
       <Button variant="ghost" size="icon" as-child :class="iconHover">
         <a
