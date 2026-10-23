@@ -10,7 +10,6 @@ import {
   TriangleAlertIcon,
 } from '@lucide/vue'
 import {
-  Address,
   Alert,
   AlertDescription,
   AlertTitle,
@@ -21,7 +20,7 @@ import {
   Textarea,
 } from 'nom-ui'
 import {useWallet} from '@/composables/useWallet'
-import {chainId, explorer, networkName} from '@/lib/env'
+import {chainId, networkName} from '@/lib/env'
 import {amountText} from '@/lib/format'
 import {MIN_FUEL_ZNN, type Fuel} from '@/lib/ignite'
 import {
@@ -58,11 +57,6 @@ interface Resume {
 
 const draft = ref('')
 const error = ref('')
-// What went out: the post, and for Boost or Torch the block it names.
-const sent = ref<{hash: string; amount: string; fuel?: Fuel} | null>(null)
-const sentVerb = computed(() =>
-  sent.value?.fuel?.kind === 'ignite' ? 'Boosted' : sent.value?.fuel ? 'Torched' : 'Tagged',
-)
 
 const text = computed(() => normalizeMessage(draft.value))
 const bytes = computed(() => (text.value ? messageBytes(text.value) : 0))
@@ -89,10 +83,9 @@ const unclaimed = ref<Fuel | null>(null)
 // second tap, since a phone browser opens the app only from one.
 const postNext = ref(false)
 
-function posted(hash: string, message: string, amount: string, fuel?: Fuel) {
+function posted(hash: string, message: string, fuel?: Fuel) {
   unclaimed.value = null
   postNext.value = false
-  sent.value = {hash, amount: fuel?.amount ?? amount, fuel}
   draft.value = ''
   emit('posted', {hash, message, address: address.value, fuel})
 }
@@ -100,7 +93,7 @@ function posted(hash: string, message: string, amount: string, fuel?: Fuel) {
 async function publish(message: string, amount: string, fuel?: Fuel) {
   step.value = 'post'
   const resume: Resume = {step: 'post', message, amount, fuel}
-  posted(await post(message, amount, fuel?.block, resume), message, amount, fuel)
+  posted(await post(message, amount, fuel?.block, resume), message, fuel)
 }
 
 function resume({context, result, error: err}: AppAnswer) {
@@ -114,7 +107,7 @@ function resume({context, result, error: err}: AppAnswer) {
     unclaimed.value = {kind: c.kind, amount: c.amount, block: hash}
     postNext.value = true
   } else {
-    posted(hash, c.message, c.amount, c.fuel)
+    posted(hash, c.message, c.fuel)
   }
 }
 
@@ -131,7 +124,6 @@ function failed(err: unknown) {
 async function submit() {
   if (!canSend.value || !text.value || amount.value === null) return
   error.value = ''
-  sent.value = null
   try {
     await publish(text.value, amount.value.toString())
   } catch (err) {
@@ -146,7 +138,6 @@ async function submit() {
 async function fuel(kind: Fuel['kind']) {
   if (!canSend.value || !text.value || amount.value === null) return
   error.value = ''
-  sent.value = null
   const message = text.value
   try {
     step.value = 'fuel'
@@ -213,32 +204,6 @@ function onKeydown(e: KeyboardEvent) {
         <TriangleAlertIcon />
         <AlertTitle>Not posted</AlertTitle>
         <AlertDescription class="break-words">{{ error }}</AlertDescription>
-      </Alert>
-
-      <Alert v-if="sent" class="border-success/40">
-        <CircleCheckIcon class="!text-success" />
-        <AlertTitle class="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span
-            >{{ sentVerb }} <span class="font-mono tabular-nums">{{ amountText(sent.amount, 8) }}</span> ZNN</span
-          >
-          <Address
-            v-if="sent.fuel"
-            :address="sent.fuel.block"
-            :href="explorer?.tx(sent.fuel.block)"
-            :start="8"
-            :end="6"
-            class="text-xs font-normal"
-          />
-          <Address
-            v-else
-            :address="sent.hash"
-            :href="explorer?.tx(sent.hash)"
-            :start="8"
-            :end="6"
-            class="text-xs font-normal"
-          />
-        </AlertTitle>
-        <AlertDescription>It appears on the wall once a momentum confirms it.</AlertDescription>
       </Alert>
 
       <Alert v-if="unclaimed && !sending" :class="postNext ? 'border-success/40' : 'border-warning/40'">
