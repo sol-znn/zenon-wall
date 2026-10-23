@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, ref} from 'vue'
+import {computed, onMounted, ref} from 'vue'
 import {
   ChevronDownIcon,
   CircleCheckIcon,
@@ -33,6 +33,7 @@ import {
   znnBaseUnits,
 } from '@/lib/post'
 import {DeclinedError} from '@/lib/syrius'
+import type {AppAnswer} from '@/lib/syriusApp'
 
 export interface Posted {
   hash: string
@@ -42,8 +43,18 @@ export interface Posted {
 }
 const emit = defineEmits<{posted: [post: Posted]}>()
 
-const {address, sending, holdSeconds, wrongChain, walletChainId, post, sendFuel} =
+const {address, sending, holdSeconds, wrongChain, walletChainId, post, sendFuel, takeSendAnswer} =
   useWallet()
+
+// What a send through the Syrius app carries away and brings back, since the
+// page that asked is gone by the time it answers (lib/syriusApp.ts).
+interface Resume {
+  step: 'fuel' | 'post'
+  message: string
+  amount: string
+  kind?: Fuel['kind']
+  fuel?: Fuel
+}
 
 const draft = ref('')
 const error = ref('')
@@ -74,15 +85,43 @@ const step = ref<'fuel' | 'post'>('post')
 // A donation or burn that went out while the post naming it did not. The ZNN
 // is spent either way, so the page offers to post again, naming it.
 const unclaimed = ref<Fuel | null>(null)
+// The donation or burn came back from the Syrius app and the post is next: a
+// second tap, since a phone browser opens the app only from one.
+const postNext = ref(false)
 
-async function publish(message: string, amount: string, fuel?: Fuel) {
-  step.value = 'post'
-  const hash = await post(message, amount, fuel?.block)
+function posted(hash: string, message: string, amount: string, fuel?: Fuel) {
   unclaimed.value = null
+  postNext.value = false
   sent.value = {hash, amount: fuel?.amount ?? amount, fuel}
   draft.value = ''
   emit('posted', {hash, message, address: address.value, fuel})
 }
+
+async function publish(message: string, amount: string, fuel?: Fuel) {
+  step.value = 'post'
+  const resume: Resume = {step: 'post', message, amount, fuel}
+  posted(await post(message, amount, fuel?.block, resume), message, amount, fuel)
+}
+
+function resume({context, result, error: err}: AppAnswer) {
+  const c = context as Resume
+  const hash = (result as {hash?: unknown} | undefined)?.hash
+  draft.value = c.message
+  if (typeof hash !== 'string' || !hash) {
+    if (c.fuel) unclaimed.value = c.fuel
+    failed(err ?? new Error('Syrius says it sent the block but reported no transaction hash.'))
+  } else if (c.step === 'fuel' && c.kind) {
+    unclaimed.value = {kind: c.kind, amount: c.amount, block: hash}
+    postNext.value = true
+  } else {
+    posted(hash, c.message, c.amount, c.fuel)
+  }
+}
+
+onMounted(() => {
+  const answer = takeSendAnswer()
+  if (answer) resume(answer)
+})
 
 function failed(err: unknown) {
   // A decline keeps the draft and says nothing: nothing was sent.
@@ -111,7 +150,8 @@ async function fuel(kind: Fuel['kind']) {
   const message = text.value
   try {
     step.value = 'fuel'
-    const block = await sendFuel(kind, amount.value.toString())
+    const amt = amount.value.toString()
+    const block = await sendFuel(kind, amt, {step: 'fuel', message, amount: amt, kind} satisfies Resume)
     unclaimed.value = {kind, amount: amount.value.toString(), block}
     await publish(message, '0', unclaimed.value)
   } catch (err) {
@@ -201,11 +241,17 @@ function onKeydown(e: KeyboardEvent) {
         <AlertDescription>It appears on the wall once a momentum confirms it.</AlertDescription>
       </Alert>
 
-      <Alert v-if="unclaimed && !sending" class="border-warning/40">
-        <TriangleAlertIcon class="!text-warning" />
-        <AlertTitle>{{ unclaimed.kind === 'burn' ? 'Burned' : 'Donated' }}, not posted</AlertTitle>
+      <Alert v-if="unclaimed && !sending" :class="postNext ? 'border-success/40' : 'border-warning/40'">
+        <CircleCheckIcon v-if="postNext" class="!text-success" />
+        <TriangleAlertIcon v-else class="!text-warning" />
+        <AlertTitle
+          >{{ unclaimed.kind === 'burn' ? 'Burned' : 'Donated' }}{{ postNext ? '' : ', not posted' }}</AlertTitle
+        >
         <AlertDescription class="flex flex-wrap items-center gap-x-1.5 gap-y-2">
-          <span>
+          <span v-if="postNext">
+            {{ amountText(unclaimed.amount, 8) }} ZNN. Now post the message naming it.
+          </span>
+          <span v-else>
             {{ amountText(unclaimed.amount, 8) }} ZNN
             {{ unclaimed.kind === 'burn' ? 'was burned' : 'went to Accelerator-Z' }}, but the post
             naming it was not sent.

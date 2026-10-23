@@ -74,7 +74,16 @@ sequenceDiagram
 ```
 
 Syrius holds a site off for 30 s after a declined or closed approval; the page
-waits that out and asks again. Without the page,
+waits that out and asks again.
+
+On a phone the same buttons go to the Syrius app for Android or iOS, which has
+no `window.zenon`: the page sends a `syrius://request` link and the app answers
+by reopening it with the result (syrius-extension `docs/APP-REQUESTS.md`). What
+the page was doing waits in localStorage under the request id, since the answer
+often lands in a new tab. A phone browser opens an app only from a tap, so Boost
+and Torch are two taps there: the ZNN, then **Post it**. The app is not asked
+for its chain; a block for another chain is refused when it is sent. Firefox
+for Android runs the extension itself and uses `window.zenon`. Without the page,
 `znn-cli send <address> 1 ZNN "ZW Hello"` posts just as well; the indexer
 accepts any amount, 0 included.
 

@@ -129,7 +129,7 @@ export class DeclinedError extends Error {
  * The provider rejects with EIP-1193-style `{code, message}` plain objects, so
  * `err.message` alone reads `undefined`.
  */
-function walletError(err: unknown, fallback: string): Error {
+export function walletError(err: unknown, fallback: string): Error {
   if (err instanceof Error) return err
   if (err && typeof err === 'object') {
     const e = err as {code?: number; message?: string}

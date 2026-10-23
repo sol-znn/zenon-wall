@@ -6,7 +6,7 @@ import {SYRIUS_EXTENSION_URL} from '@/lib/syrius'
 
 // Why Connect Syrius (in the header) did not work, under the hero where there
 // is room to say it. Nothing at all while there is nothing to say.
-const {available, error} = useWallet()
+const {available, viaApp, error} = useWallet()
 </script>
 
 <template>
@@ -15,7 +15,7 @@ const {available, error} = useWallet()
     <AlertDescription class="break-words">
       {{ error }}
       <a
-        v-if="!available"
+        v-if="!available || viaApp"
         :href="SYRIUS_EXTENSION_URL"
         target="_blank"
         rel="noreferrer"
